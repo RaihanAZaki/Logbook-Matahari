@@ -1,0 +1,72 @@
+version: '4'
+
+services:
+  app:
+    build: .
+    image: logbook
+    container_name: logbook
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: app
+    working_dir: /home/logbook
+    volumes:
+      - .:/home/logbook
+      - ./storage/php.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - logbook
+
+  webserver:
+    image: nginx:alpine
+    container_name: nginxlogbook
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "2022:80"
+    volumes:
+      - .:/home/logbook
+      - ./storage/:/etc/nginx/conf.d/
+    depends_on:
+      - db
+    networks:
+      - logbook
+
+  
+  db:
+    image: mysql:5.7
+    container_name: dblogbook
+    restart: always
+    tty: true
+    ports:
+      - "20222:3306"
+    volumes:
+      - lbdata:/var/lib/mysql
+    environment:
+      MYSQL_PASSWORD: logbook
+      MYSQL_ROOT_PASSWORD: logbook
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    networks:
+      - logbook
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: pmalogbook
+    links: 
+      - db
+    restart: always
+    ports:
+      - 7000:80
+    networks:
+      - logbook
+
+# NETWORK
+networks:
+  logbook:
+    driver: bridge
+
+# VOLUME
+volumes:
+  lbdata:
+    driver: local
+
